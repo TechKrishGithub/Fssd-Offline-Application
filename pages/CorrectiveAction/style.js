@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
       },
       ObservHead:
       {
-        fontSize:20,
+        fontSize:15,
         fontWeight:'600',
         color:'white',
         paddingLeft:10,
@@ -34,7 +34,6 @@ const styles = StyleSheet.create({
       HeadContainer:
       {
         backgroundColor:'#1d9831',
-        height:'18%',
         borderWidth:0.5,
         borderColor:'grey',
         justifyContent:'center',
@@ -68,7 +67,7 @@ const styles = StyleSheet.create({
       },
       TableTitles:
       {
-        fontSize:15,
+        fontSize:12,
         fontWeight:'bold',
         color:'black'
       },

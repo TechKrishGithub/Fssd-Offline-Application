@@ -4,25 +4,43 @@
     "slug": "fssd",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/splash.jpg",
+    "icon": "./assets/splash.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.jpg",
+      "image": "./assets/splash.png",
       "backgroundColor": "#f1faff",
       "imageResizeMode": "contain"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyC17cBFPSoqIroA3GqRMBgXAAJVYTU14TE"
+      },
+      "bundleIdentifier": "com.kakarlatechnowell.fssd"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/splash.jpg",
+        "foregroundImage": "./assets/splash.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyC17cBFPSoqIroA3GqRMBgXAAJVYTU14TE"
+        }
+      },
+      "package": "com.kakarlatechnowell.fssd"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b993f681-77e8-4e15-952e-9d66a6ba77d9"
+      }
+    },
+    "owner": "technowellkrishna"
   }
 }

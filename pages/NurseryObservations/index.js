@@ -31,7 +31,8 @@ const NurseryObservations = ({route,navigation}) => {
   const {
     selectedNursery,
     nurDate,
-    nursery
+    nursery,
+    filterSyncedData
   }=route.params;
  
 
@@ -43,8 +44,11 @@ const NurseryObservations = ({route,navigation}) => {
   const [success,setSuccess]=useState('');
   const [nurseryDetails,setNurseryDetails]=useState([]);
 
+  const [editObser,setEditObser]=useState('');
+
 
   const [getNurseryFromEntry,setGetNurseryFromEntry]=useState([]);
+  const [statusForObser,setStatusForObser]=useState(false);
 
   const [nurseryDate,setNurseryDate]=useState(new Date());
 
@@ -106,6 +110,7 @@ const NurseryObservations = ({route,navigation}) => {
                 (_, { rows }) => {
                   if (rows.length > 0) {
                     setGetNurseryFromEntry(rows._array);
+                    setStatusForObser(true);
                     const date=new Date(rows._array[0].Date)
                     setNurseryDateForUpdate(date);
                   }
@@ -116,6 +121,28 @@ const NurseryObservations = ({route,navigation}) => {
                  
         })
     })     
+    }
+    else
+    {
+      db.transaction(tx=>
+        { 
+            tx.executeSql(
+                'SELECT * FROM NurseryObservation where Nusery=?',
+                [selectedNursery],
+                (_, { rows }) => {
+                  if (rows.length > 0) {
+                    setGetNurseryFromEntry(rows._array);
+                    setStatusForObser(true);
+                    const date=new Date(rows._array[0].Date)
+                    setNurseryDateForUpdate(date);
+                  }
+                  else
+                  {
+                    console.log('Data Not Found on this nursery');
+                  }
+                 
+        })
+    })    
     }
    
   }
@@ -176,14 +203,13 @@ const NurseryObservations = ({route,navigation}) => {
    
   };
 
-  const handleEditText = (index, Observation) => {
+  const handleEditText = (index) => {
     if(Observation=='')
     {
       setError('Sorry Please Update Observation...')
     }
     else
     {
-      
     const newArray = [...data];
     newArray[index] = {Observation};
     setData(newArray);
@@ -198,7 +224,7 @@ const NurseryObservations = ({route,navigation}) => {
   }
   };
 
-  const handleEditTextUpdate = (index, Observation) => {
+  const handleEditTextUpdate = (index) => {
     if(Observation=='')
     {
       setError('Sorry Please Update Observation...')
@@ -233,7 +259,8 @@ const NurseryObservations = ({route,navigation}) => {
     newData.splice(index, 1);
     setGetNurseryFromEntry(newData);
   }
-
+  
+  let isSubmitHandled = false;
 
   const SubmitData=()=>
   {
@@ -281,17 +308,20 @@ const NurseryObservations = ({route,navigation}) => {
     })
     })
   }
-  setTimeout(()=>
-  {
-     if(error!='')
-     {
-      console.log('okay')
-     }
-     else
-     {
-      goBack();
-     }
-  },1000)
+  if (!isSubmitHandled) {
+    isSubmitHandled = true;
+
+    setTimeout(() => {
+      if (error !== '') {
+        console.log('okay');
+      } else {
+        navigation.goBack();
+      }
+
+      // Reset the flag variable after handling the submit 
+      isSubmitHandled = false;
+    }, 100);
+  }
   }
 
   const goBack = () => {
@@ -306,49 +336,73 @@ const NurseryObservations = ({route,navigation}) => {
 
   const updateData=()=>
   {
-    db.transaction(tx => {
-      tx.executeSql(
-        'DELETE FROM NurseryObservation WHERE  Nusery= ?',
-        [nursery],
-        (_, result) => {
-          console.log('Rows affected:', result.rowsAffected);
-        },
-        (_, error) => {
-          console.log('Error deleting data:', error);
-        }
-      );
-        getNurseryFromEntry.map((i)=>
-        {
-          tx.executeSql(
-            'INSERT INTO NurseryObservation (Nusery, Observation, Date) VALUES (?,?, ?)',
-            [nursery,i.Observation,nurseryDateForUpdate.toISOString().substr(0, 10)],
-            (_, result) => {
-              console.log(result.rowsAffected);
-              setSuccess('Data Updated Successfully');
-              setTimeout(()=>
-              {
-                setSuccess('');
-              },5000)
-              setError('');
-            },
-            (_, error) => {
-              setError('Sorry Data Not Updated Please Try Again');
-              console.log(error)
-            }
-          )
-          })
-      })
-    setTimeout(()=>
+    if(getNurseryFromEntry.length <= 0)
     {
-       if(error!='')
-       {
-        console.log('okay')
-       }
-       else
-       {
-        goBack();
-       }
-    },1500)
+      setError('Please Enter Observation Details');
+    }
+    else
+    {
+      let myNursery;
+      let myDate;
+      if(selectedNursery==undefined)
+      {
+        myNursery=nursery;
+        myDate=nurseryDateForUpdate.toISOString().substr(0, 10);
+      }
+      else
+      {
+        myNursery=selectedNursery;
+        myDate=nurDate
+      }
+      setError('');
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM NurseryObservation WHERE  Nusery= ?',
+          [myNursery],
+          (_, result) => {
+            console.log('Rows affected:', result.rowsAffected);
+          },
+          (_, error) => {
+            console.log('Error deleting data:', error);
+          }
+        );
+          getNurseryFromEntry.map((i)=>
+          {
+            tx.executeSql(
+              'INSERT INTO NurseryObservation (Nusery, Observation, Date) VALUES (?,?, ?)',
+              [myNursery,i.Observation,myDate],
+              (_, result) => {
+                console.log(result.rowsAffected);
+                setSuccess('Data Updated Successfully');
+                setTimeout(()=>
+                {
+                  setSuccess('');
+                },5000)
+                setError('');
+              },
+              (_, error) => {
+                setError('Sorry Data Not Updated Please Try Again');
+                console.log(error)
+              }
+            )
+            })
+        })
+        if (!isSubmitHandled) {
+          isSubmitHandled = true;
+      
+          setTimeout(() => {
+            if (error !== '') {
+              console.log('okay');
+            } else {
+              navigation.goBack();
+            }
+      
+            // Reset the flag variable after handling the submit
+            isSubmitHandled = false;
+          }, 100);
+        }
+    }
+   
   }
 
 
@@ -404,13 +458,13 @@ const NurseryObservations = ({route,navigation}) => {
   
 
 
-  if(getNurseryFromEntry.length>0)
+  if(getNurseryFromEntry.length>0||statusForObser)
   {
     
     return(
       <View style={{padding:16}}>
       <ScrollView style={styles.container}>
-    
+    {nursery!==undefined&&
         <View style={styles.container}>
         {renderLabel('Date')}
          <View style={[styles.dropdown,{justifyContent:'center'}]}>
@@ -435,9 +489,9 @@ const NurseryObservations = ({route,navigation}) => {
       </View>
       </View>
          
+               }
       
-      
-          <View >
+          <View style={{paddingTop:5}}>
       
             <View style={styles.HeadContainer}>
           <Text style={styles.ObservHead}>Nursery Observation Information</Text>
@@ -470,9 +524,9 @@ const NurseryObservations = ({route,navigation}) => {
           <DataTable>
         
               <DataTable.Header>
-                <View style={{width:'60%'}}>
+               
                 <DataTable.Title><Text style={[styles.TableTitles,styles.content]}>Observation</Text></DataTable.Title>
-                </View>
+          
                 <View style={styles.widthOfTableContent}>
                 <DataTable.Title><Text style={[styles.TableTitles,styles.content]}>{edit?edit:'Edit'}</Text></DataTable.Title>
                 </View>
@@ -495,27 +549,16 @@ const NurseryObservations = ({route,navigation}) => {
                   {editIndex === index ?
                 (
                   <>
-                <View style={{width:'60%'}}>
+               
                   <DataTable.Cell>
                 <View style={[{justifyContent:'center',padding:7}]}>
               <TextInput 
-              style={[styles.ObservInfo,{justifyContent:'center'}]}
-              placeholder={item.Observation}
-             onChangeText={(e)=>
-              {
-                setEditText(e);
-              }}
-              value={editText}
-              
+      
               />
               </View>
                 
                   </DataTable.Cell>
-                  </View>
                   
-                  {/* <View style={[{width:'20%'}]}>
-                  <DataTable.Cell><Text>{item.nurDate.toISOString().substr(0, 10)}</Text></DataTable.Cell>
-                  </View> */}
       
                   <View style={[styles.widthOfTableContent]}>
                   <DataTable.Cell>
@@ -532,6 +575,7 @@ const NurseryObservations = ({route,navigation}) => {
                  <View style={[styles.widthOfTableContent]}>
                  <DataTable.Cell>
                   <TouchableOpacity onPress={() =>{ setEditIndex(-1); setEdit('');  setEditText('');
+                  setObservations('');
                   if(error!=='')
                   {
                     setError('');
@@ -545,28 +589,33 @@ const NurseryObservations = ({route,navigation}) => {
                 ) :
                 (
                   <>
-                  <View style={{width:200}}>
+                  
                   <DataTable.Cell><Text>{item.Observation}</Text></DataTable.Cell>
-                  </View>
       
                   <View  style={[styles.widthOfTableContent,styles.content]}>
                   <DataTable.Cell>
-                    <TouchableOpacity
-                    onPress={()=>{
-                      setEditIndex(index)
-                       setEdit('Update');
-                    }}
-                    >
-                    <FontAwesome name="edit" size={27} color="black" />
-                    </TouchableOpacity>
+                    {filterSyncedData==undefined&&
+                     <TouchableOpacity
+                     onPress={()=>{
+                       setEditIndex(index)
+                        setEdit('Update');
+                        setObservations(item.Observation)
+                     }}
+                     >
+                     <FontAwesome name="edit" size={27} color="black" />
+                     </TouchableOpacity>
+                    }
               
                  </DataTable.Cell>
                  </View>
                  <View  style={[styles.widthOfTableContent,styles.content]}>
                  <DataTable.Cell>
+                  {
+                  filterSyncedData==undefined&&
                   <TouchableOpacity onPress={() => deleteRowForUpdate(index)} >
                   <AntDesign name="closesquare" size={24} color="red" />
                   </TouchableOpacity>
+                  }
                   </DataTable.Cell>
                   </View>
                   </>
@@ -580,15 +629,18 @@ const NurseryObservations = ({route,navigation}) => {
           </View>  
           </View>
           {success?<Text style={styles.successText}>{success}</Text>:null}
-          <View style={{paddingLeft:10,paddingRight:10}}>
-      <TouchableOpacity 
-      onPress={updateData}
-       style={styles.Submitbutton}>
-       <FontAwesome name="file" size={24} color="white"  style={styles.fileSubmit}/>
-            <Text style={styles.SubmitbuttonText}>Update</Text>
-          </TouchableOpacity>
-          </View>
-      
+          {
+            filterSyncedData==undefined&&
+            <View style={{paddingLeft:10,paddingRight:10}}>
+            <TouchableOpacity 
+            onPress={updateData}
+             style={styles.Submitbutton}>
+             <FontAwesome name="file" size={24} color="white"  style={styles.fileSubmit}/>
+                  <Text style={styles.SubmitbuttonText}>Update</Text>
+                </TouchableOpacity>
+                </View>      
+          }
+         
           </ScrollView>
           </View>
     )
@@ -598,23 +650,6 @@ const NurseryObservations = ({route,navigation}) => {
   return (
     <View style={{padding:16}}>
 <ScrollView style={styles.container}>
-<Button
-title='know'
-onPress={()=>
-{
-  console.log(getNurseryFromEntry)
-}}
-/>
-
-
-        {/* <DropDownSearch
-        placeholderText={"Select Nursery"}
-        data={nurseryDetails}
-        label={"Name Of Nursery"}
-        maxHeight={250}
-        handleChange={(e)=> setIsselectedNursery(e)}
-        selectedValue={selectedNursery}
-      /> */}
 
     {selectedNursery==undefined?
   <View style={styles.container}>
@@ -647,7 +682,7 @@ onPress={()=>
    
 
 
-    <View >
+    <View style={{paddingTop:5}}>
 
       <View style={styles.HeadContainer}>
     <Text style={styles.ObservHead}>Nursery Observation Information</Text>
@@ -680,9 +715,9 @@ onPress={()=>
     <DataTable>
   
         <DataTable.Header>
-          <View style={{width:'60%'}}>
+        
           <DataTable.Title><Text style={[styles.TableTitles,styles.content]}>Observation</Text></DataTable.Title>
-          </View>
+         
 
           {/* <View style={styles.widthOfTableContent}>
           <DataTable.Title><Text  style={[styles.TableTitles,styles.content]}>Date</Text></DataTable.Title>
@@ -711,33 +746,22 @@ onPress={()=>
             {editIndex === index ?
           (
             <>
-          <View style={{width:'60%'}}>
+         
             <DataTable.Cell>
           <View style={[{justifyContent:'center',padding:7}]}>
         <TextInput 
-        style={[styles.ObservInfo,{justifyContent:'center'}]}
-        placeholder={item.Observation}
-       onChangeText={(e)=>
-        {
-          setEditText(e);
-        }}
-        value={editText}
         
         />
         </View>
           
             </DataTable.Cell>
-            </View>
-            
-            {/* <View style={[{width:'20%'}]}>
-            <DataTable.Cell><Text>{item.nurDate.toISOString().substr(0, 10)}</Text></DataTable.Cell>
-            </View> */}
+           
+          
 
             <View style={[styles.widthOfTableContent]}>
             <DataTable.Cell>
               <TouchableOpacity
-               onPress={() =>{ handleEditText(index, editText)
-             
+               onPress={() =>{ handleEditText(index)
               }}
               >
              <EvilIcons name="refresh" size={35} color="black" />
@@ -748,6 +772,7 @@ onPress={()=>
            <View style={[styles.widthOfTableContent]}>
            <DataTable.Cell>
             <TouchableOpacity onPress={() =>{ setEditIndex(-1); setEdit('');  setEditText('');
+            setObservations('');
             if(error!=='')
             {
               setError('');
@@ -761,9 +786,9 @@ onPress={()=>
           ) :
           (
             <>
-            <View style={{width:200}}>
+        
             <DataTable.Cell><Text>{item.Observation}</Text></DataTable.Cell>
-            </View>
+            
 
             {/* <View  style={[{width:'20%',marginLeft:15},styles.content]}>
             <DataTable.Cell><Text>{nurDate.toISOString().substr(0, 10)}</Text></DataTable.Cell>
@@ -775,6 +800,7 @@ onPress={()=>
               onPress={()=>{
                 setEditIndex(index)
                  setEdit('Update');
+                 setObservations(item.Observation)
               }}
               >
               <FontAwesome name="edit" size={27} color="black" />
@@ -800,6 +826,7 @@ onPress={()=>
     </View>  
     </View>
     {success?<Text style={styles.successText}>{success}</Text>:null}
+
     <View style={{paddingLeft:10,paddingRight:10}}>
 <TouchableOpacity 
  onPress={SubmitData}

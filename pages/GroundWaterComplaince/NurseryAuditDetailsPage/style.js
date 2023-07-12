@@ -56,12 +56,11 @@ const styles = StyleSheet.create({
   Heading:
   {
     backgroundColor:'#677676',
-    height:'3%',
     justifyContent:'center'
   },
   HeadText:
   {
-    fontSize:20,
+    fontSize:17,
     fontWeight:'bold',
     marginLeft:10,
     color:'#fff'

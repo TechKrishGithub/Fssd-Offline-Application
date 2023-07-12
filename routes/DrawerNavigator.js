@@ -23,24 +23,34 @@ import myLogo from "../assets/logo-removebg-preview.png"
 import WiseLogo from "../assets/wise_logo.png";
 import {
   NurseryAuditChecklist,
-  NurseryObservations,
-  CorrectiveAction,
   Logout,
   Dashboard,
-  PinGeneration
 } from "../pages/index";
+import { TouchableOpacity } from "react-native-gesture-handler";
+
 
 
 const Drawer = createDrawerNavigator();
 const DrawerNavigator = () => {
   return (
+  
     <Drawer.Navigator
+    drawerType="slide"
       drawerContent={(props) => {
         return (
           <SafeAreaView>
+
+  <TouchableOpacity style={{padding: 5,paddingLeft:15}}>
+  <Ionicons
+    name="arrow-back-sharp"
+    size={24}
+    color="black"
+    onPress={() => props.navigation.goBack()}
+  />
+  </TouchableOpacity>
+
             <View
               style={{
-                height: 210,
                 width: "100%",                
                 justifyContent: "center",
                 alignItems: "center",
@@ -48,6 +58,7 @@ const DrawerNavigator = () => {
                 borderBottomWidth: 1,
               }}
             >
+              
               <View style={{
                  justifyContent:'center',
                  alignItems:'center',
@@ -59,6 +70,8 @@ const DrawerNavigator = () => {
                  width:140,
                  marginLeft:-15
               }}>
+               
+                
               <Image
                 source={myLogo}
                 style={{
@@ -76,13 +89,14 @@ const DrawerNavigator = () => {
                 }}
 
               >
-              REPUBLIC OF UGANDA
+              Republic Of Uganda
               </Text>
            
               <Text
                 style={{
                   marginVertical: 6,
                   fontWeight: "bold",
+                  fontSize:13,
                   color: "#156235"
                 }}
               >
@@ -142,7 +156,7 @@ const DrawerNavigator = () => {
           headerTitle:()=>
           {
             return(
-              <Text style={{color:'#fff',fontWeight:'bold',fontSize:17,marginRight:20}}>Dashboard</Text>
+              <Text style={{color:'#fff',fontWeight:'bold',marginRight:20}}>Dashboard-Nursery Audit List</Text>
             )
            
           },
@@ -152,13 +166,6 @@ const DrawerNavigator = () => {
               style={{ width: 100, height: 50, marginRight: 10}}
             />
           ),
-        
-          // headerBackground:()=>(
-          //   <Image
-          //   source={top}
-          //   style={{ width: '100%',height:'100%'}}
-          // />
-          // )
         }}
         component={Dashboard}
       />
@@ -175,7 +182,7 @@ const DrawerNavigator = () => {
           headerTitle:()=>
           {
             return(
-              <Text style={{color:'#fff',fontWeight:'bold',fontSize:17,marginRight:20}}>Nursery Audit</Text>
+              <Text style={{color:'#fff',fontWeight:'bold',fontSize:15,marginRight:20}}>Nursery Audit</Text>
             )
            
           },
@@ -191,80 +198,6 @@ const DrawerNavigator = () => {
         
       />
 
-      
-      {/* <Drawer.Screen
-        name="NurseryObservations"
-        options={{
-          drawerLabel: "NurseryObservations",
-          title: "Nursery Observations",
-          drawerIcon: () => (
-            <MaterialCommunityIcons name="briefcase-search" size={20} color="#808080" />
-          ),
-          headerTitleAlign:'center',
-          headerTitle:()=>
-          {
-            return(
-    <Text style={{color:'#fff',fontWeight:'bold',fontSize:17,marginRight:20}}>Nursery Observations</Text>
-    )
-           
-          },
-          headerRight: () => (
-            <Image
-              source={WiseLogo}
-              style={{ width: 100, height: 50, marginRight: 10}}
-            />
-          ),
-        }}
-        component={NurseryObservations}
-      /> */}
-    
-      {/* <Drawer.Screen
-        name="Corrective Action"
-        options={{
-          drawerLabel: "Corrective Action",
-          title: "Corrective Action",
-          drawerIcon: () => (
-            <MaterialIcons
-              name="local-attraction"
-              size={20}
-              color="#808080"
-            />
-          ),
-          headerTitleAlign:'center',
-          headerTitle:()=>
-          {
-            return(
-              <Text style={{color:'#fff',fontWeight:'bold',fontSize:17,marginRight:20}}>Corrective Action</Text>
-            )
-           
-          },
-          headerRight: () => (
-            <Image
-              source={WiseLogo}
-              style={{ width: 100, height: 50, marginRight: 10}}
-            />
-          ),
-      
-        }}
-        component={CorrectiveAction}
-      /> */}
-
-
-      {/* <Drawer.Screen
-        name="Waste Water Complaince"
-        options={{
-          drawerLabel: "Waste Water Complaince",
-          title: "Waste Water Complaince",
-          drawerIcon: () => (
-            <MaterialCommunityIcons
-              name="certificate"
-              size={20}
-              color="#808080"
-            />
-          ),
-        }}
-        component={WasteWaterComplaince}
-      /> */}
       <Drawer.Screen
         name="Logout"
         options={{
@@ -285,6 +218,7 @@ const DrawerNavigator = () => {
       />
       
     </Drawer.Navigator>
+ 
   );
 };
 

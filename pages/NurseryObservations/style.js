@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
       },
       ObservHead:
       {
-        fontSize:20,
+        fontSize:15,
         fontWeight:'600',
         color:'white',
         paddingLeft:10,
@@ -36,11 +36,10 @@ const styles = StyleSheet.create({
       HeadContainer:
       {
         backgroundColor:'#1d9831',
-        height:'18%',
+        height:50,
         borderWidth:0.5,
         borderColor:'grey',
         justifyContent:'center',
-        height:50
       },
 
       ObservDropdown:{
@@ -70,7 +69,7 @@ const styles = StyleSheet.create({
       },
       TableTitles:
       {
-        fontSize:18,
+        fontSize:13,
         fontWeight:'bold',
         color:'black'
       },
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
       },
       submitText:
       {
-        fontSize:20,
+        fontSize:17,
         fontWeight:'bold'
       },
       Submitbutton: {
@@ -110,7 +109,7 @@ const styles = StyleSheet.create({
       },
       SubmitbuttonText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: 'bold',
       },
       Indicator:
@@ -127,7 +126,7 @@ const styles = StyleSheet.create({
       },
       widthOfTableContent:
       {
-        width:'20%'
+        width:'15%'
       },
       content:
       {

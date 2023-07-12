@@ -16,8 +16,6 @@ import {
   DropDownSearch,
   DropDown 
 } from "../../components";
-import DropDownForNormal from "../../components/DropdownForNormal";
-import DropDownSearchForSpecies from "../../components/DropdownSearch/DropdownSearchForSpecies";
 import styles from "./style";
 import { 
   useState,
@@ -40,8 +38,6 @@ import currentLocation from '../../assets/currentLocation.png'
 
 import SectionedMultiSelect from 'react-native-sectioned-multi-select';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import NurseryObservations from "../NurseryObservations";
-import CorrectiveAction from "../CorrectiveAction";
 
 import MapView,{Marker,Callout} from 'react-native-maps';
 import { MultipleSelectList } from "react-native-dropdown-select-list";
@@ -52,13 +48,12 @@ import DropDownForlatlon from "../../components/DropdownForlatlon";
 
 
 
-
-
-
-
 const db = SQLite.openDatabase('mydb.Nursery');
 
 const NurseryAuditChecklist = (props) => {
+
+  const apiKey = "AIzaSyC17cBFPSoqIroA3GqRMBgXAAJVYTU14TE";
+
   const { navigation } = props;
   
   const isFocused = useIsFocused();
@@ -74,6 +69,8 @@ const NurseryAuditChecklist = (props) => {
   const [nurseryAuditDetails,setNurseryAuditDetails]=useState([]);
   const [speciesDetails,setSpeciesDetails]=useState([]);
   const [selectedSpecies,setSelectedSpecies]=useState(null);
+
+  const [pickerDisabled,setPickerDisabled]=useState(false)
 
 
   const [nurObs,setNurObs]=useState(false);
@@ -94,6 +91,8 @@ const NurseryAuditChecklist = (props) => {
 
   const [nurAudEntry,setNurAudEntry]=useState([]);
 
+  const [nurAudEntryForShowObsCorr,setNurAudEntryForShowObsCorr]=useState([])
+
   const [nurLoca,setNurLoc]=useState('');
   const [representative,setRepresentative]=useState('0');
   const [representativeName,setRepresentativeName]=useState('');
@@ -107,6 +106,14 @@ const NurseryAuditChecklist = (props) => {
 
   const [isFocusPhn,setisFocusPhn]=useState(false);
   const [isFocusAlt,setisFocusAlt]=useState(false);
+
+  const [isValidForPhn, setIsValidForPhn] = useState(true);
+
+  const [nurAudAns,setNurAudAns]=useState([]);
+
+  const [success,setSuccess]=useState('');
+
+  const [disabledData,setDisabledData]=useState([]);
 
 
   const [dateOfAudit, setDateOfAudit] = useState(new Date());
@@ -124,6 +131,14 @@ const NurseryAuditChecklist = (props) => {
   const [latFromGps,setLatFromGps]=useState('');
   const[langFromGps,setLangFromGps]=useState('');
 
+  const [latIfNotExist,setLatIfNotExist]=useState('');
+  const [LonIfNotExist,setLonIfNotExist]=useState('');
+
+  const [statusForObser,setStatusForObser]=useState([]);
+  const [statusForCorr,setStatusForCorr]=useState([]);
+
+  const [errorIfExistBasicDetails,setErrorIfExistBasicDetails]=useState('');
+
   useEffect(()=>
   {
     getNurseryDetails();
@@ -131,13 +146,21 @@ const NurseryAuditChecklist = (props) => {
     getSpeciesDetails();
     createTableOfAudit();
     getNursery();
+    getNurseryAuditEntry();
+    getLocationAsync();
+    checkForObservation();
       setTimeout(()=>
       {
+        checkForObservation();
         getNurseryDetails();
         getNurseryAuditDetails();
         getSpeciesDetails();
         createTableOfAudit();
         getNursery();
+        getLocationAsync();
+        getNurseryAuditEntry();
+        setLoading(false)
+        
       },1000)
       const interval = setInterval(() => {
         setDots((prevDots) => {
@@ -158,28 +181,70 @@ const NurseryAuditChecklist = (props) => {
 
   useFocusEffect(
     React.useCallback(() => {
-      setLoading(true);
-      
-        setTimeout(()=>
-        {
-          getNursery();
-          setLoading(false)
-        },1000)
-        const interval = setInterval(() => {
-          setDots((prevDots) => {
-            if (prevDots.length === 5) {
-              return '';
-            } else {
-              return prevDots + '.';
-            }
-          });
-        }, 500);
-        
-        return () => {
-          clearInterval(interval)
-        };
-    }, [isFocused])
+      getLocationAsync();
+        getNurseryAuditEntry();
+        getNurseryAuditDetails();
+        checkForObservation();
+      setTimeout(()=>
+      {
+        checkForObservation();
+          getNurseryAuditEntry();
+          getNurseryAuditDetails();
+          console.log(selectedNursery)
+          console.log(nurAudEntryForShowObsCorr.length)
+      },300)
+      return () => {
+        console.log('Screen is unfocused');
+      };
+    }, [])
   );
+
+
+  const checkForObservation=(e)=>
+  {
+    if(e)
+    {
+
+      db.transaction(tx=>
+        {
+          tx.executeSql(
+            'SELECT * FROM NurseryObservation where Nusery=?',
+            [e],
+            (_, { rows }) => {
+                setStatusForObser(rows._array);
+            })
+            tx.executeSql(
+              'SELECT * FROM CorrectiveAction where Nursery=?',
+              [e],
+              (_, { rows }) => {
+                
+                  setStatusForCorr(rows._array);
+              })
+        })
+
+    }
+    else
+    {
+    db.transaction(tx=>
+      {
+        tx.executeSql(
+          'SELECT * FROM NurseryObservation where Nusery=?',
+          [selectedNursery],
+          (_, { rows }) => {
+           
+              setStatusForObser(rows._array);
+          })
+          tx.executeSql(
+            'SELECT * FROM CorrectiveAction where Nursery=?',
+            [selectedNursery],
+            (_, { rows }) => {
+                setStatusForCorr(rows._array);
+            })
+      })
+    }
+  }
+
+
 
   async function getLocationAsync() {
     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -191,8 +256,9 @@ const NurseryAuditChecklist = (props) => {
     {
         // Location permission granted, now get the user's location
   let location = await Location.getCurrentPositionAsync({});
-  setLatFromGps(location.coords.latitude);
-  setLangFromGps(location.coords.longitude)
+  const { latitude, longitude } = location.coords;
+  setLatIfNotExist(latitude.toString());
+  setLonIfNotExist(longitude.toString())
   // console.log('User location:', location.coords.latitude, location.coords.longitude);
     }
    
@@ -208,7 +274,7 @@ const NurseryAuditChecklist = (props) => {
     db.transaction(tx=>
       
       {
-        tx.executeSql('create table if not exists NurseryAuditEntryDetails(id INTEGER PRIMARY KEY AUTOINCREMENT,nursery varchar,location varchar,species TEXT,date date,typeOfRepresentative TEXT,nameOfRepresentative Text,Latitude varchar,Longitude varchar,Altitude varchar)')
+        tx.executeSql('create table if not exists NurseryAuditEntryDetails(id INTEGER PRIMARY KEY AUTOINCREMENT,nursery varchar,location varchar,SeedfromNationallyRecommendedSources varchar,HoldingCapacity varchar,BothRequisitesHaveBeenMet varchar,District varchar,species TEXT,date date,typeOfRepresentative TEXT,nameOfRepresentative Text,phonenumber varchar,Latitude varchar,Longitude varchar,Altitude varchar)')
       })
   }
 
@@ -236,6 +302,12 @@ const NurseryAuditChecklist = (props) => {
               (_, { rows }) => {
                 setNurseryAuditDetails(rows._array);
       })
+      tx.executeSql(
+        'SELECT * FROM NurseriesAfterClearingData',
+        [],
+        (_, { rows }) => {
+            setDisabledData(rows._array);
+        })
   })     
   }
 
@@ -252,7 +324,45 @@ const NurseryAuditChecklist = (props) => {
   })     
   }
 
+  const getNurseryAuditEntry=(e)=>
+  {
+    if(e)
+    {
+      db.transaction(tx=>
+        { 
+          tx.executeSql('SELECT * FROM NurseryAuditEntryDetails where nursery=?',
+          [e],
+          (_,{ rows }) => {
+            setNurAudEntryForShowObsCorr(rows._array);
+        })
+        tx.executeSql('SELECT * FROM NurseryAuditAnswers where nursery=?',
+        [e],
+        (_,{ rows }) => {
+          setNurAudAns(rows._array);
+      })
+    })    
+    }
+    else
+    {
+      db.transaction(tx=>
+        { 
+          tx.executeSql('SELECT * FROM NurseryAuditEntryDetails where nursery=?',
+          [selectedNursery],
+          (_,{ rows }) => {
+            setNurAudEntryForShowObsCorr(rows._array);
+        })
+        tx.executeSql('SELECT * FROM NurseryAuditAnswers where nursery=?',
+        [selectedNursery],
+        (_,{ rows }) => {
+          setNurAudAns(rows._array);
+      })
+    })    
+    }
+    
+  }
 
+
+ 
   const getNursery=()=>
   {
     const isTableEmpty = () => {
@@ -295,6 +405,56 @@ const NurseryAuditChecklist = (props) => {
   }
 
 
+  const SaveBasicDetails=()=>
+  {
+    Alert.alert(
+      'Data Saved',
+      'Do you want to Save Data Without Audit?',
+      [
+        { text: 'Yes', style: 'cancel', onPress: () => 
+      {
+        handleYes();
+        setPickerDisabled(true);
+      } },
+        { text: 'No', onPress: () =>console.log('NoPressed') }
+      ]
+    );
+  
+  }
+
+  const handleYes=()=>
+  {
+    const arrayString = JSON.stringify(namesArray);
+    db.transaction(tx=>
+      {
+        tx.executeSql('SELECT nursery from NurseryAuditEntryDetails',[],
+        (_, { rows }) => {
+          // Get all values from the column and check if drillPip is exists
+          const nurseryValues = rows._array.map((row) => row.nursery);
+          if (nurseryValues.includes(selectedNursery)) {
+            setErrorIfExistBasicDetails('Data Already Saved on this Nursery');
+            setSuccess('');
+          }
+          else
+          {
+            tx.executeSql('INSERT INTO NurseryAuditEntryDetails(nursery,location,District,species,date,typeOfRepresentative,nameOfRepresentative,phonenumber,Latitude,Longitude,Altitude,SeedfromNationallyRecommendedSources,HoldingCapacity,BothRequisitesHaveBeenMet) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            [selectedNursery,filter[0].Address,filter[0].district,arrayString,dateOfAudit.toLocaleDateString(),representative,representativeName,phoneNumber,latIfNotExist,LonIfNotExist,altitude,que1,que2,que3],
+            (tx,result)=>
+            {
+              setErrorIfExistBasicDetails('');
+              console.log('Data inserted into table successful')
+              setSuccess('Data Saved Successfully....')
+            },
+            (error)=>console.log(error)
+            )
+          }
+
+        })
+
+      })
+  }
+   
+
     
   
  
@@ -303,16 +463,16 @@ const NurseryAuditChecklist = (props) => {
     setSelectedItems(selectedItems);
   };
 
-  // const renderCustomItem = ({ item, selectedItems, onPress }) => {
-  //   const itemFontColor = selectedItems ? 'red' : 'blue'; // Change the colors as per your requirement
+  const renderCustomItem = ({ item, selectedItems, onPress }) => {
+    const itemFontColor = selectedItems ? 'red' : 'blue'; // Change the colors as per your requirement
   
-  //   return (
-  //     <TouchableOpacity onPress={onPress}>
-  //       <Text style={{ color: itemFontColor }}>{item.label}</Text>
-  //     </TouchableOpacity>
-  //   );
-  // };
-  // const selectedItemTextColor = '#FF0000';
+    return (
+      <TouchableOpacity onPress={onPress}>
+        <Text style={{ color: itemFontColor }}>{item.label}</Text>
+      </TouchableOpacity>
+    );
+  };
+  const selectedItemTextColor = '#FF0000';
 
   const [mapRegion,setMapRegion]=useState({
     latitude: 31.776685,
@@ -366,6 +526,9 @@ const NurseryAuditChecklist = (props) => {
        region={mapRegion}
        onPress={getNewRegion}
        showsUserLocation={true}
+       provider={Platform.OS === 'android' ? MapView.PROVIDER_GOOGLE : null}
+      showsMyLocationButton={true}
+      apiKey={apiKey}
       >
   
        <Marker coordinate={mapRegion}
@@ -425,13 +588,28 @@ const NurseryAuditChecklist = (props) => {
   }
    
   const renderLabel = (label) => {
-    if (isFocus) {
-      return (
-        <Text style={[styles.label,{color:'blue'}]}>
-        {label}
-        </Text>
-      );
+    if(label=='Name of Representative'||label=='Catagory of Representative')
+    {
+      if (isFocus) {
+        return (
+          <Text style={[styles.label,{color:'blue'}]}>
+          {label} <Text style={{color:'red'}}>*</Text>
+          </Text>
+        );
+      }
+
     }
+    else
+    {
+      if (isFocus) {
+        return (
+          <Text style={[styles.label,{color:'blue'}]}>
+          {label}
+          </Text>
+        );
+      }
+    }
+  
     return null;
   };
 
@@ -459,14 +637,26 @@ const NurseryAuditChecklist = (props) => {
   
   const onPress=()=>
   {
-    // console.log(selectedNursery,filter[0].Address,selectedItems,dateOfAudit,representative,representativeName,filter[0].Latitude,filter[0].Longitude,altitude,que1,que2,que3)
-    console.log(namesArray)
+    console.log(filter)
   }
 
   const mergeName=()=>
   {
-    const represent=firstName+' '+middleName+' '+lastName;
-    setRepresentativeName(represent);
+      let fullName = '';
+  
+      if (firstName) {
+        fullName += firstName;
+      }
+  
+      if (middleName) {
+        fullName += ' ' + middleName;
+      }
+  
+      if (lastName) {
+        fullName += ' ' + lastName;
+      }
+  
+      setRepresentativeName(fullName)
   }
 
   const items = [
@@ -496,29 +686,36 @@ const NurseryAuditChecklist = (props) => {
 
   const filter=selectedNursery?nurseryDetails.filter((v)=>v.nurseryname==selectedNursery):null;
 
+
+
   const nurseryNames = nurAudEntry.map(item => item.nursery);
-  const filteredNursery=nurseryDetails.filter(item => !nurseryNames.includes(item.nurseryname))
+  const filteredNursery=nurseryDetails.filter(item => !nurseryNames.includes(item.nurseryname));
+
+  // const disabledNurseryNames = disabledData.map((item) => item.nursery);
+  // const data = disabledNurseryNames.map((item) => ({
+  //   ...item,
+  //   disabled: filteredNursery.includes(item.nurseryname),
+  // }));
+
+
   
 
+  const validatePhoneNumber = (number) => {
+    const regex = /^(\+256\s)?\d{9}$/; // Regex for 10 digits
+    return regex.test(number);
+  };
 
   return (
     <>
-   
     <ScrollView>
 
     <View style={{ flex: 1, backgroundColor: "white", padding: 10 }}>
 
-{/* <Button
-title="know"
-onPress={()=>
-{
-  console.log(filteredNursery)
-}}
-/> */}
       
       <DropDownSearch
         placeholderText={"Select Nursery"}
         data={filteredNursery.length>0?filteredNursery:nurseryDetails}
+        myData={disabledData}
         label={"Name Of Nursery"}
         maxHeight={250}
         handleChange={(e)=>{
@@ -528,60 +725,48 @@ onPress={()=>
           setFirstName('');
           setLastName('');
           setMiddleName('');
+          setRepresentativeName('');
           setPhoneNumber('');
           setisFocusAlt(false);
           setisFocusPhn(false);
           setAltitude('');
           setQue1('0');
           setQue2('0');
+          getNurseryAuditEntry(e);
+          setNurLoc('');
+          getLocationAsync();
+          setErrorIfExistBasicDetails('');
+          setSuccess('');
+          setPickerDisabled(false);
+          checkForObservation(e);
         }}
         selectedValue={selectedNursery}
       />
 
-      <DropDown
+
+       <DropDownForlatlon
       label={'Nursery Location'}
       placeholderText={'Nursery Location'}
-      maxHeight={220}
-      myValue={(e)=>setNurLoc(e)}
-      Location={filter?filter[0].Address:null}
+      Location={filter?filter[0].Address:''}
+      myValue={nurLoca}
+      valueGet={(e)=>setNurLoc(e)}
       />
 
      <DropDown
       label={'District'}
-      placeholderText={'Nursery Location'}
+      placeholderText={'District'}
       maxHeight={220}
       myValue={(e)=>setNurLoc(e)}
       Location={filter?filter[0].district:null}
       />
 
-        <View style={[styles.container]}>
-          <MultipleSelectList
-          setSelected={(v)=>setSelectedItems(v)}
-          searchPlaceholder="search Raised Species"
-          placeholder="Select Raised Species"
-          data={myItems}
-          label="Raised Species"
-          save="value"
-          notFoundText="Raised Species Are not Found"
-          badgeStyles={{backgroundColor:'black'}}
-          badgeTextStyles={{fontWeight:'bold'}}
-          labelStyles={{color:'blue'}}
-          checkBoxStyles={{borderWidth:1,borderColor:'black'}}
-          showRemoveAll={true}
-            />
-         </View>
-
-     {/* <View style={[styles.container,{justifyContent:'center'}]}>
+     <View style={[styles.container,{justifyContent:'center'}]}>
 
     <SectionedMultiSelect
         items={items}
         uniqueKey="id"
         subKey="children"
-        selectText= {selectedItems.length > 0 ? 'Raised Species':'Raised Species'}
-        // renderSelectText={() =>
-        //  <Text style={[{paddingRight:'70%'},selectedItems.length > 0 ?{color:'blue'}:{color:'black'}]}>
-        //   {selectedItems.length > 0 ? 'Your Species':'Select Species'}
-        // </Text>}
+        selectText={selectedItems.length > 0 ? 'Raised Species *' : 'Raised Species *'}
         selectTextStyle={styles.selectText}
         selectedItemTextStyle={styles.selectedItemText}
         showDropDowns={true}
@@ -607,7 +792,7 @@ onPress={()=>
         searchPlaceholderText='Search Species.......'
 
       />
-      </View> */}
+      </View>
        
       <View style={styles.container}>
      {renderLabel('Date Of Audit')}
@@ -637,25 +822,20 @@ onPress={()=>
       {renderLabel('Catagory of Representative')}
       <View style={[styles.dropdown]}>
       <Picker
+      
          selectedValue={representative}
          onValueChange={(itemValue) => setRepresentative(itemValue)}
          
        >
-         <Picker.Item label='select' value='0' style={{fontSize:20,color:'grey'}}/>
-        <Picker.Item label='Nursery Manager' value='Nursery Manager' style={{fontSize:20}}/>
-        <Picker.Item label='Superviser' value='Superviser' style={{fontSize:20}}/>
-        <Picker.Item label='Representative' value='Representative' style={{fontSize:20}}/>
+         <Picker.Item label='select' value='0' style={{fontSize:15,color:'grey'}}/>
+        <Picker.Item label='Nursery Manager' value='Nursery Manager' style={{fontSize:15}}/>
+        <Picker.Item label='Superviser' value='Superviser' style={{fontSize:15}}/>
+        <Picker.Item label='Representative' value='Representative' style={{fontSize:15}}/>
        </Picker>
        </View>
         
       </View>
 
-      {/* <DropDownForNormal
-      label={'Name of Representative'}
-      placeholderText={'Name of Representative'}
-      maxHeight={220}
-      myValue={(e)=>setRepresentativeName(e)}
-      /> */}
  
       <View style={styles.container}>
         {renderLabel('Name of Representative')}
@@ -665,85 +845,93 @@ onPress={()=>
         placeholder="First Name"
         value={firstName}
         onChangeText={text => setFirstName(text)}
+        onBlur={mergeName}
       />
       <TextInput
         style={styles.input}
         placeholder="Middle Name"
         value={middleName}
         onChangeText={text => setMiddleName(text)}
+        onBlur={mergeName}
       />
       <TextInput
         style={styles.input}
         placeholder="Last Name"
         value={lastName}
-        onChangeText={text => setLastName(text)}
-        onBlur={mergeName}
+        onChangeText={text =>
+          { setLastName(text)
+          }}
+          onBlur={mergeName}
       />
       </View>
       </View>
 
       <View style={[styles.container]}>
-       {renderLabelForPhn('Phone Number')}
+       {renderLabel('Phone Number')}
        <View  style={[styles.dropdown,{fontSize:20,justifyContent:'center'} ]}>
           <TextInput
           value={phoneNumber}
-          onChangeText={e=>setPhoneNumber(e)}
-          placeholder="Phone Number"
-          placeholderTextColor={isFocusPhn?'white':'black'}
+          onChangeText={number=>
+            {
+              const formattedNumber = number.startsWith('+256') ? number : '+256' + number;
+            setPhoneNumber(formattedNumber);
+              setIsValidForPhn(validatePhoneNumber(formattedNumber));
+            }
+          }
+          placeholder="+256XXXXXXXXX"
           keyboardType="numeric"
-          onFocus={()=>setisFocusPhn(true)}
           onBlur={()=>{
             if(phoneNumber=='')
             {
-              setisFocusPhn(false)
+              setisFocusPhn(false);
+              setIsValidForPhn(true);
             }
+            if(phoneNumber=='+256 '||phoneNumber=='+256')
+            {
+              setPhoneNumber('');
+              setIsValidForPhn(true);
+              console.log(representative)
+            }
+      
           }}
+          maxLength={14}
+          onFocus={() => setPhoneNumber('+256 ')}
           />
        </View>
 
       </View>
 
-      {/* <DropDownForNormal
-      label={'Phone Number'}
-      placeholderText={'Phone Number'}
-      maxHeight={220}
-      takeValue={phoneNumber}
-      myValue={(e)=>setPhoneNumber(e)}
-      keyboardType={'numeric'}
-      /> */}
+      {!isValidForPhn && (
+        <View style={{paddingLeft:16,paddingTop:5}}>
+        <Text style={{ color: 'red',fontSize:11 }}>Phone number itself is 9 numbers other than 256</Text>
+        </View>
+      )}
 
-      <View style={[{flexDirection:'row',paddingLeft:16}]}>
-      <Image source={mapLogo} style={{height:30,width:30}}/>
-       <TouchableOpacity style={styles.button} onPress={()=>setVisible(true)}>
-       <Text style={styles.buttonText}>View Maps</Text>
-       </TouchableOpacity>
-     
+        <View style={styles.container}>
+     {renderLabel('Latitude')}
+      <View style={[styles.dropdown,{justifyContent:'center'}]}>
+      <TextInput
+        value={latIfNotExist}
+        placeholder="Longitude"
+        onChangeText={(text) => setLatIfNotExist(text)}
+        keyboardType="numeric"
+      />
+      </View>
       </View>
 
-      <DropDownForlatlon
-      label='Latitude'
-      Location={mapCoordinates.latitude==''?filter?parseFloat(filter[0].Latitude).toFixed(2):null:parseFloat(mapCoordinates.latitude).toFixed(2)}
+      <View style={styles.container}>
+     {renderLabel('Longitude')}
+      <View style={[styles.dropdown,{justifyContent:'center'}]}>
+      <TextInput
+        value={LonIfNotExist}
+        placeholder="Longitude"
+        onChangeText={(text) => setLonIfNotExist(text)}
+        keyboardType="numeric"
       />
-       <DropDownForlatlon
-      label='Longitude'
-      Location={mapCoordinates.longitude==''?filter?parseFloat(filter[0].Longitude).toFixed(2):null:parseFloat(mapCoordinates.longitude).toFixed(2)}
-      />
+      </View>
+      </View>
 
-
-     {/* <DropDown
-      label={'Latitude'}
-      placeholderText={'Latitude'}
-      maxHeight={220}
-      Location={filter?parseFloat(filter[0].Latitude).toFixed(2):null}
-      />
-
-      <DropDown
-      label={'Longitude '}
-      placeholderText={'Longitude'}
-      maxHeight={220}
-      Location={filter?parseFloat(filter[0].Longitude).toFixed(2):null}
-      /> */}
-     
+          
 
      <View style={[styles.container]}>
        {renderLabelForAlt('Altitude(Meters)')}
@@ -752,7 +940,7 @@ onPress={()=>
           value={altitude}
           onChangeText={(e)=>setAltitude(e)}
           placeholder="Altitude(Meters)"
-          placeholderTextColor={isFocusAlt?'white':'black'}
+          placeholderTextColor={isFocusAlt?'transparent':'black'}
           keyboardType="numeric"
           onFocus={()=>setisFocusAlt(true)}
           onBlur={()=>{
@@ -767,20 +955,13 @@ onPress={()=>
       </View>
 
 
-     {/* <DropDownForNormal
-      label={'Altitude(Meters)'}
-      placeholderText={'Altitude(Meters)'}
-      maxHeight={220}
-      takeValue={altitude}
-      myValue={(e)=>setAltitude(e)}
-      keyboardType={'numeric'}
-      /> */}
 
       <View style={styles.container}>
       {renderLabel('Is the Seed from Nationally recommended sources?')}
 
       <View style={[styles.dropdown]}>
       <Picker
+      enabled={!pickerDisabled}
          selectedValue={que1}
          onValueChange={(itemValue) => {
           setQue1(itemValue);
@@ -801,9 +982,9 @@ onPress={()=>
            }
         }}
        >
-         <Picker.Item label='select' value='0' style={{fontSize:20,color:'grey'}}/>
-        <Picker.Item label='Yes' value='Yes' style={{fontSize:20}}/>
-        <Picker.Item label='No' value='No' style={{fontSize:20}}/>
+         <Picker.Item label='select' value='0' style={{fontSize:15,color:'grey'}}/>
+        <Picker.Item label='Yes' value='Yes' style={{fontSize:15}}/>
+        <Picker.Item label='No' value='No' style={{fontSize:15}}/>
        </Picker>
        </View>
       </View>
@@ -811,6 +992,7 @@ onPress={()=>
       {renderLabel('Has the holding capacity of 100,000 seedlings per season been achieved ?')}
       <View style={[styles.dropdown]}>
       <Picker
+      enabled={!pickerDisabled}
          selectedValue={que2}
          onValueChange={(itemValue) => {
           setQue2(itemValue);
@@ -831,9 +1013,9 @@ onPress={()=>
         }}
          
        >
-         <Picker.Item label='select' value='0' style={{fontSize:20,color:'grey'}}/>
-        <Picker.Item label='Yes' value='Yes' style={{fontSize:20}}/>
-        <Picker.Item label='No' value='No' style={{fontSize:20}}/>
+         <Picker.Item label='select' value='0' style={{fontSize:15,color:'grey'}}/>
+        <Picker.Item label='Yes' value='Yes' style={{fontSize:15}}/>
+        <Picker.Item label='No' value='No' style={{fontSize:15}}/>
        </Picker>
        </View>
       </View>
@@ -847,85 +1029,139 @@ onPress={()=>
       </View>
 
       <View style={styles.container}>
-      {/* {renderLabel('both pre-requisities have been met')}
-      <View style={[styles.dropdown]}>
-      <Picker
-        
-         selectedValue={que3}
-         onValueChange={(itemValue) =>{setQue3(itemValue)}}
-       >
-         <Picker.Item label='select' value='0' style={{fontSize:20,color:'grey'}}/>
-        <Picker.Item label='Yes' value='Yes' style={{fontSize:20}}/>
-        <Picker.Item label='No' value='No' style={{fontSize:20}}/>
-       </Picker>
-       </View> */}
+      
        {
         que1=='Yes' && que2=='Yes' ?
-        selectedNursery!=null?
+        selectedNursery!=null && namesArray.length>0 && representative!=='0' && representativeName.trim() !== ''? 
        <AccordianList navigation={navigation} data={nurseryAuditDetails} 
        nursery={selectedNursery}
-       location={filter[0].Address}
-       species={selectedItems}
+       location={filter[0].Address==''?nurLoca:filter[0].Address}
+       District={filter[0].district}
+       species={namesArray}
        dateOfAudit={dateOfAudit.toLocaleDateString()}
        representative={representative}
        representativeName={representativeName}
-       latitude={mapCoordinates.latitude==''?filter[0].Latitude:mapCoordinates.latitude}
-       longitude={mapCoordinates.longitude==''?filter[0].Longitude:mapCoordinates.longitude}
-       altitude={altitude}
+       phonenumber={phoneNumber}
+      latitude={latIfNotExist}
+      longitude={LonIfNotExist}
+      altitude={altitude}
+       nurAudAns={nurAudAns}
+       nurAudEntryForShowObsCorr={nurAudEntryForShowObsCorr}
+       que1={que1}
+       que2={que2}
+       que3={que3}
        />
+       
     :
+
+    selectedNursery==null?
     <Text style={{color:'red'}}>Sorry Please select Nursery</Text>
-       :null
+    :
+    namesArray.length<=0?
+    <Text style={{color:'red'}}>Sorry Please Select Raised Species</Text>
+    :
+    representative=='0'?
+    <Text style={{color:'red'}}>Sorry Please Select Catagory Of Representative</Text>
+    :
+    representativeName.trim() === ''?
+    <Text style={{color:'red'}}>Sorry Please Enter Name of Representative</Text>
+    :
+    null
+       :
+       null
       }
       </View>
 
-
-      <View style={[styles.container]}>
-      <TouchableOpacity
-      style={[styles.dropdown,{justifyContent:'center',borderWidth:0}]}
-      onPress={()=>{
-        if(selectedNursery!=undefined)
-        {
-          navigation.navigate('NurseryObservations',{selectedNursery:selectedNursery,nurDate:dateOfAudit.toISOString().substr(0, 10)});
-        }
-        else
-        {
-          Alert.alert('Warning','Please Select Nursery To Go Nursery Observation')
-        }
-        
-      }}
-      >
-        <View style={{flexDirection:'row'}}>
-        <MaterialCommunityIcons name="briefcase-search" size={20} color="#000" />
-      <Text style={styles.NurObsText}>Nursery Observation</Text>
-    
-      </View>
-      </TouchableOpacity>
-      </View>
-
-
-      <View style={[styles.container]}>
-      <TouchableOpacity
-      style={[styles.dropdown,{justifyContent:'center',borderWidth:0}]}
-      onPress={()=>{
-        if(selectedNursery!=undefined)
-        {
-          navigation.navigate('CorrectiveAction',{selectedNursery:selectedNursery});
-        }
-        else
-        {
-          Alert.alert('Warning','Please Select Nursery To Go CorrectiveAction')
-        }
-      }}
-      >
-        <View style={{flexDirection:'row'}}>
-        <MaterialIcons name="local-attraction" size={20} color="#000" />
-      <Text style={styles.NurObsText}>CorrectiveAction</Text>
-     
-      </View>
-      </TouchableOpacity>
-      </View>
+{
+    que1=='Yes' && que2=='Yes' && selectedNursery!=null && nurAudAns.length>0?
+    <View>
+    <View style={[styles.container]}>
+    <TouchableOpacity
+    style={[styles.dropdown,{justifyContent:'center',borderWidth:0}]}
+    onPress={()=>{
+      if(selectedNursery!=undefined)
+      {
+        navigation.navigate('NurseryObservations',{selectedNursery:selectedNursery,nurDate:dateOfAudit.toISOString().substr(0, 10)});
+      }
+      else
+      {
+        Alert.alert('Warning','Please Select Nursery To Go Nursery Observation')
+      }
       
+    }}
+    >
+      <View style={{flexDirection:'row',alignItems:'center'}}>
+      <MaterialCommunityIcons name="briefcase-search" size={18} color="#000" />
+    <Text style={styles.NurObsText}>Nursery Observation</Text>
+    {statusForObser.length>0 ? <AntDesign name="checkcircle" size={15} color="green" />:null}
+    </View>
+    </TouchableOpacity>
+    </View>
+
+
+    <View style={[styles.container]}>
+    <TouchableOpacity
+    style={[styles.dropdown,{justifyContent:'center',borderWidth:0}]}
+    onPress={()=>{
+      if(selectedNursery!=undefined)
+      {
+        navigation.navigate('CorrectiveAction',{selectedNursery:selectedNursery});
+      }
+      else
+      {
+        Alert.alert('Warning','Please Select Nursery To Go CorrectiveAction')
+      }
+    }}
+    >
+      <View style={{flexDirection:'row',alignItems:'center'}}>
+      <MaterialIcons name="local-attraction" size={18} color="#000"/>
+    <Text style={styles.NurObsText}>CorrectiveAction</Text>
+    {statusForCorr.length>0? <AntDesign name="checkcircle" size={15} color="green" />:null}
+    </View>
+    </TouchableOpacity>
+    </View>
+    </View>
+    :
+    null
+
+}
+
+
+     
+
+{/* {errorIfExistBasicDetails?<Text style={{color:'red',paddingLeft:16,paddingBottom:5}}>{errorIfExistBasicDetails}</Text>:null}
+{success?<Text style={{color:'green',paddingLeft:16,paddingBottom:5}}>{success}</Text>:null}
+
+{que3=='No'||que3=='0'&& selectedNursery!=null && namesArray.length>0 && representative!=='0' && representativeName.trim() !== ''? 
+
+<View style={{justifyContent:'center',alignItems:'center'}}>
+ <TouchableOpacity style={{
+  backgroundColor: '#4285F4',
+  borderRadius: 5,
+  padding: 10,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent:'center',
+  width:'90%'
+ }}
+ onPress={SaveBasicDetails}
+ >
+ <Icon name="save" size={24} color="#FFF" />
+ <Text style={{
+   color: '#FFF',
+   marginLeft: 5,
+   fontSize: 16,
+ }}>Save</Text>
+</TouchableOpacity>
+</View>
+:
+null
+} */}
+
+
+
+
+
 
       {/* <View style={[styles.container]}>
       <TouchableOpacity

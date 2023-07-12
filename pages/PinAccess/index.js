@@ -161,7 +161,7 @@ const PinAccess = ({navigation}) => {
       <View style={[styles.containerInside]}>
 
         <View  style={styles.user}>
-      <EvilIcons name="user" size={70} color="black" style={styles.userLogo}/>
+      <EvilIcons name="user" size={55} color="black" style={styles.userLogo}/>
       <Text style={styles.userText}>{user}</Text>
      
       </View>

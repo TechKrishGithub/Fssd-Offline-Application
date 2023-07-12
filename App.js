@@ -10,11 +10,6 @@ import PinAccess from "./pages/PinAccess";
 import PinGeneration from "./pages/PinGeneration";
 import { CorrectiveAction, NurseryObservations } from "./pages";
 
-import {
-  SelfMonitoring,
-  StandardsComplaince,
-} from "./pages/GroundWaterComplaince/GWComplainceList";
-
 // Prevent native splash screen from autohiding before App component declaration
 SplashScreen.preventAutoHideAsync()
   .then((result) =>

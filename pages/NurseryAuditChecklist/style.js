@@ -152,9 +152,10 @@ container: {
   NurObsText:
   {
     color:'black',
-    fontSize:20,
+    fontSize:18,
     fontWeight:'600',
-    marginLeft:10
+    marginLeft:8,
+    marginRight:15
   },
   downIcon:
   {

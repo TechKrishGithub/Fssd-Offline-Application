@@ -29,14 +29,24 @@ const Dashboard = ({navigation}) =>
   const [nurObserData,setNurObserData]=useState([]);
   const [correctiveData,setCorrectiveData]=useState([]);
 
+  const [forQuestionIdAndMaxScore,setForQuestionIdAndMaxScore]=useState([]);
+  const [forNurId,setForNurId]=useState([]);
+
 
   const [nurAudAns,setNurAudAns]=useState([]);
   const [nurAudDet,setNurAudDet]=useState([]);
   const [nurAudEntry,setNurAudEntry]=useState([]);
 
+  const [userDetails,setUserDetails]=useState([]);
+
   const [dots, setDots] = useState('');
 
   const[loading,setLoading]=useState([]);
+
+  const [syncData,setSyncData]=useState([]);
+
+  const [statusForSync,setStatusForSync]=useState('');
+
 
 
 
@@ -46,9 +56,11 @@ const Dashboard = ({navigation}) =>
     Table('CorrectiveAction');
     Table('NurseryObservation'); 
     Table('NurseryAuditEntryDetails');
+    createTableForSyncingData();
     getDetails();
     setTimeout(()=>
     {
+      createTableForSyncingData();
       getDetails();
       setLoading(false);
     },1000)
@@ -72,7 +84,7 @@ const Dashboard = ({navigation}) =>
       Table('NurseryAuditAnswers');
       Table('CorrectiveAction');
       Table('NurseryObservation');
-      Table('NurseryAuditEntryDetails')
+      Table('NurseryAuditEntryDetails');
       getDetails();
       setTimeout(()=>
       {
@@ -163,38 +175,57 @@ const getDetails=()=>
       setCorrectiveData(rows._array)
     }
     )
+    tx.executeSql('SELECT * FROM NurseyAuditCriterionQuestions',
+    [],
+    (_,{ rows }) => {
+      setForQuestionIdAndMaxScore(rows._array)
+    }
+    )
+    tx.executeSql('SELECT * FROM NurseryDetials',
+    [],
+    (_,{ rows }) => {
+      setForNurId(rows._array)
+    }
+    )
+    tx.executeSql('SELECT * FROM User_Master',
+    [],
+    (_,{ rows }) => {
+      setUserDetails(rows._array)
+    }
+    )
+    tx.executeSql('SELECT * FROM NurseriesAfterSyncingData',
+    [],
+    (_,{ rows }) => {
+      setSyncData(rows._array);
+    }
+    )
+    
 })     
 }
 
-  const onPress=()=>
- {
-  // db.transaction(tx=>
-  //   {
-  //     tx.executeSql('SELECT * FROM NurseryAuditAnswers',
-  //     [],
-  //     (tx,result)=>
-  //     {
-  //       for(let i=0;i<result.rows.length;i++)
-  //       {
-  //         const {auditcriterionid,question,maxscore,comment}=result.rows.item(i);
-  //         console.log(`auditcriterionid:${auditcriterionid},question:${question},maxscore:${maxscore},comment:${comment}`);
-  //       }
-  //     }
-  //     )
-  //   })
 
-    db.transaction(tx=>
-      { 
-          tx.executeSql(
-              'SELECT * FROM NurseryAuditDetails',
-              [],
-              (_, { rows }) => {
-                console.log(rows._array);
-      })
-  })     
-  
+
+
+ const createTableForSyncingData=()=>
+ {
+  db.transaction(tx=>
+    {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS NurseriesAfterSyncingData (id INTEGER PRIMARY KEY AUTOINCREMENT, NurseryName Varchar, nurseryid VARCHAR)')
+      tx.executeSql('create table if not exists NurseriesAfterClearingData(id INTEGER PRIMARY KEY AUTOINCREMENT,nursery varchar)')
+    })
  }
 
+ const myStatus=(e)=>
+ {
+  if(e=='Yes')
+  {
+    getDetails();
+  }
+  else
+  {
+    console.log('None')
+  }
+ }
  
 
    if(loading)
@@ -213,46 +244,23 @@ const getDetails=()=>
 
   return (
     <ScrollView style={{backgroundColor:'rgba(198, 227, 228,0.5)'}}>
-  
     <View style={styles.container}>
   
       <View style={styles.content}>
         <View style={styles.infoBlock}>
           <Text style={styles.infoBlockHeading}>Nursery Audit List</Text>
-          {nurAudAns.length >0 ?
-          <DashboardNurseryAuditList nurAudEntry={nurAudEntry} nurAudDet={nurAudDet} nurAudAns={nurAudAns} navigation={navigation} nurObserData={nurObserData} correctiveData={correctiveData}/>
+          {nurAudEntry.length >0 ?
+          <DashboardNurseryAuditList nurAudEntry={nurAudEntry} nurAudDet={nurAudDet} nurAudAns={nurAudAns} navigation={navigation} nurObserData={nurObserData} correctiveData={correctiveData} forQuestionIdAndMaxScore={forQuestionIdAndMaxScore} forNurId={forNurId} userDetails={userDetails} syncedData={syncData} myStatus={(e)=>myStatus(e)}/>
           :
           <Text style={{fontWeight:'bold',color:'#ebbf31'}}>Data Not Found</Text>
               }
         </View>
-
-
-
-
-
-        {/* <View style={styles.infoBlock}>
-          <Text style={styles.infoBlockHeading}>Nursery Observations</Text>
-         
-          {
-            nurObser ?  <Text style={styles.successText}>Success</Text>: <Text style={styles.pendingText}>Pending</Text>
-          }
-        </View> */}
-        {/* <View style={styles.infoBlock}>
-          <Text style={styles.infoBlockHeading}>Corrective Action</Text>
-         
-          {
-            corrective ?  <Text style={styles.successText}>Success</Text>: <Text style={styles.pendingText}>Pending</Text>
-          }
-         
-        </View> */}
-    
       </View>
 
          </View>
          </ScrollView>
   );
 };
-
 
 
 

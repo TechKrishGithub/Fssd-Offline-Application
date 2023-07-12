@@ -27,7 +27,6 @@ const style = StyleSheet.create({
       padding: 20,
     },
     modalText: {
-      fontSize: 18,
       fontWeight: 'bold',
       marginBottom: 10,
     },
@@ -53,7 +52,6 @@ const style = StyleSheet.create({
     },
     text: {
         color: '#fff',
-        fontSize: 20,
         fontWeight: 'bold',
         marginRight: 5,
       },
@@ -67,15 +65,14 @@ const style = StyleSheet.create({
         borderWidth:0.5,
         borderColor:'gray',
         borderRadius:100,
-        height:'26%',
-        width:'25%',
+        height:'32%',
+        width:'27%',
         backgroundColor:'#dedede',
         justifyContent:'center',
         alignItems:'center'
       },
       user:
       {
-        fontSize:20,
         fontWeight:'bold',
         color:'#333'
       },
@@ -94,7 +91,6 @@ const style = StyleSheet.create({
       },
       textTable:
       {
-        fontSize:15,
         fontWeight:'500',
       },
       containerForLogout: {
@@ -109,33 +105,64 @@ const style = StyleSheet.create({
       },
       textForLogout: {
         color: '#fff',
-        fontSize: 13,
         marginLeft: 10,
         fontWeight: 'bold'
       },
 
       button: {
-
         backgroundColor: '#4CAF50',
         borderRadius: 5,
         padding: 10,
-        width:100,
+        width:150,
         height:40,
         flexDirection: 'row',
         alignItems: 'center',
       },
       buttonText: {
         color: '#FFFFFF',
-        fontSize: 15,
         fontWeight: 'bold',
         marginLeft: 10,
+        justifyContent:'center',
+        alignItems:'center'
       },
       Buttons:
       {
         flexDirection:'row',
         justifyContent:'center',
         alignItems:'center'
-      }
+      },
+      containerForButtons: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginVertical: 10,
+
+      },
+      buttonNew: {
+        backgroundColor: 'blue',
+        borderRadius: 5,
+        paddingVertical: 10,
+        paddingHorizontal: 25,
+        marginHorizontal: 5,
+        flexDirection: 'row',
+        alignItems: 'center'
+      },
+      buttonTextNew: {
+        color: 'white',
+        marginLeft: 5,
+        fontWeight:'500'
+      },
+      userIconContainer: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        backgroundColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      buttonGap: {
+      padding:25 // Adjust the value as needed for the desired gap height
+      },
   });
   
 

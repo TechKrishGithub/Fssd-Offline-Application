@@ -5,11 +5,11 @@ const styles=StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,
-      borderRadius: 5,
+      borderRadius: 15,
       padding: 10,
       marginVertical: 10,
       borderColor: '#ccc',
-      width:'95%'
+      width:'95%',
     },
     FieldInput: {
       flex: 1,
@@ -20,16 +20,16 @@ const styles=StyleSheet.create({
       flex:1,
       justifyContent:'center',
       alignItems:'center',
-      backgroundColor:'grey'
+      backgroundColor:'grey',
     },
     Field:{
-
       width:'90%',
       borderWidth:1,
       borderColor:'grey',
-      // justifyContent:'center',
+      justifyContent:'center',
       alignItems:'center',
       backgroundColor:'#f7f7fd',
+      borderRadius:15
     },
     InputText:
     {

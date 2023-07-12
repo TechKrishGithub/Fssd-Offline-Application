@@ -10,6 +10,7 @@ import styles from "./style";
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { apiEndpoints } from "../../config/endpoints";
 import NetInfo from '@react-native-community/netinfo';
+import { ActivityIndicator } from "react-native-paper";
 
 const db = SQLite.openDatabase('mydb.Nursery');
 
@@ -18,14 +19,21 @@ const UserInput=({navigation})=>
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  const [success,setSuccess]=useState('');
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+
     
 useEffect(()=>
 {
+  setSuccess('');
+  setError('');
+  setLoading(false);
     getData();
     createTables();
     setTimeout(()=>
     {
-      getData()
+      getData();
     },500)
    
 },[]);
@@ -80,14 +88,13 @@ db.transaction(tx => {
 
   db.transaction(tx => {
     tx.executeSql(
-      tx.executeSql('create table if not exists NurseryAuditEntryDetails(id INTEGER PRIMARY KEY AUTOINCREMENT,nursery varchar,location varchar,species TEXT,date date,typeOfRepresentative TEXT,nameOfRepresentative Text,Latitude varchar,Longitude varchar,Altitude varchar)')
+      tx.executeSql('create table if not exists NurseryAuditEntryDetails(id INTEGER PRIMARY KEY AUTOINCREMENT,nursery varchar,location varchar,SeedfromNationallyRecommendedSources varchar,HoldingCapacity varchar,BothRequisitesHaveBeenMet varchar,District varchar,species TEXT,date date,typeOfRepresentative TEXT,nameOfRepresentative Text,phonenumber varchar,Latitude varchar,Longitude varchar,Altitude varchar)')
     );
   });
+
   db.transaction(tx=>
     {
-      tx.executeSql(
-        'CREATE TABLE IF NOT EXISTS NurseryAuditAnswers (id INTEGER PRIMARY KEY AUTOINCREMENT,nursery varchar, auditcriterionid varchar,question varchar,maxscore integer,comment varchar)',
-      );
+      tx.executeSql('CREATE TABLE IF NOT EXISTS NurseriesAfterSyncingData (id INTEGER PRIMARY KEY AUTOINCREMENT, NurseryName Varchar, nurseryid VARCHAR)')
     })
 
 }
@@ -336,10 +343,7 @@ const getNurseryDetails = async () => {
             console.log(error);
         }
     }
-
-    
-   
-    
+  
     
     const Validate=async ()=>
     {
@@ -365,6 +369,13 @@ const getNurseryDetails = async () => {
     
           if(result.length!==0)
           {
+              setSuccess('Login Success Please Wait....');
+              setLoading(true);
+              setTimeout(()=>
+              {
+                setLoading(false);
+                setSuccess('');
+              },8000)
               getNurseryDetails();
               getNurseryAuditDetails();
               getNurseyAuditCriterionQuestions();
@@ -390,7 +401,8 @@ const getNurseryDetails = async () => {
           }
           else
           {
-            Alert.alert('warning','Username and password wrong');
+            // Alert.alert('warning','Username and password wrong');
+            setError('Sorry,Please Enter Valid Username and password')
           }
         }).catch(error=>{ 
           console.log(error)
@@ -398,7 +410,8 @@ const getNurseryDetails = async () => {
           }
           else
           {
-             Alert.alert('warning','Please Entered Username and Password')
+            //  Alert.alert('warning','Please Entered Username and Password')
+            setError('Sorry, Please Entered Username and Password')
           }
          }
          catch(error)
@@ -412,6 +425,8 @@ const getNurseryDetails = async () => {
     }
 
     
+
+    
     
     // Rest of your component's rendering logic
     
@@ -420,33 +435,47 @@ const getNurseryDetails = async () => {
   return(
     <View style={styles.user}>
      <View style={{height:'10%',width:'20%',justifyContent:'center',alignItems:'center',backgroundColor:'white',borderRadius:60}}>
-     <Image source={logo} style={{height:'80%',width:'70%'}}/>
+     <Image source={logo} style={{height:'70%',width:'70%'}}/>
      </View>
      <Text></Text> 
       <View style={styles.Field}>
-      <Image source={wiselogo} style={{height:'18%',width:'40%'}}/>
-       
+      <Image source={wiselogo} style={{height:'15%',width:'30%',marginTop:-20}}/>     
         <Text></Text>
-        <Text style={{fontSize:20,}}>sign in to start your session  while online</Text>
-        
-     
+        <Text style={{fontWeight:'500'}}>Please login when you are online</Text>
       <Text></Text>
-      <Text></Text> 
       <View style={styles.InputContainer}>
-      <TextInput placeholder="Enter username" placeholderTextColor='grey' style={styles.FieldInput} onChangeText={setUsername} value={username}/>
+      <TextInput placeholder="Enter username" placeholderTextColor='grey' style={styles.FieldInput} 
+      onChangeText={
+        (e)=>
+        {
+          setUsername(e);
+          if(error)
+          {
+            setError('');
+          }
+          if(success)
+          {
+            setSuccess('')
+          }}}
+       value={username}/>
       <Icon name="user" size={20} color="#000" style={{ marginRight: 10 }} />
       </View>
       <Text></Text>
       <View style={styles.InputContainer}>
-      <TextInput placeholder="Enter password" placeholderTextColor='gray'  secureTextEntry={true}  style={styles.FieldInput} onChangeText={setPassword} value={password} />
+      <TextInput placeholder="Enter password" placeholderTextColor='gray'  secureTextEntry={true}  style={styles.FieldInput} onChangeText={(e)=>{setPassword(e);if(error){setError('')}if(success){setSuccess('')}}} value={password} />
       <Icon name="lock" size={20} color="#000" style={{ marginRight: 10 }} />
       </View>
       <Text></Text>
       <TouchableOpacity style={styles.button} onPress={Validate}>
       <Text style={styles.buttonText}>Submit</Text>
     </TouchableOpacity>
+        <Text></Text>
+        {error?<Text style={{color:'red'}}>{error}</Text>:null}
+        {loading?<ActivityIndicator size="small" color="blue"/>:null}
+        {success?<Text style={{color:'green'}}>{success}</Text>:null}
       </View>
         {/* <Warning visible={warningVis} change={WarningMessage}/> */}
+        
     </View>
   )
 }

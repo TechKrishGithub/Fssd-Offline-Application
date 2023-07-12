@@ -32,7 +32,8 @@ const db = SQLite.openDatabase('mydb.Nursery');
 
     const {
       selectedNursery,
-      nursery
+      nursery,
+      filterSyncedData
     }=route.params;
 
   const [dateBeClosed, setDateBeClosed] = useState(new Date());
@@ -54,6 +55,8 @@ const db = SQLite.openDatabase('mydb.Nursery');
   const [editText,setEditText]=useState('');
 
   const [getNurseryFromEntry,setGetNurseryFromEntry]=useState([]);
+  
+  const [statusForCorr,setStatusForCorr]=useState(false);
 
   const [nurseryDateForUpdate,setNurseryDateForUpdate]=useState(new Date());
 
@@ -120,6 +123,29 @@ const db = SQLite.openDatabase('mydb.Nursery');
                 (_, { rows }) => {
                   if (rows.length > 0) {
                     setGetNurseryFromEntry(rows._array);
+                    setStatusForCorr(true);
+                    const date=new Date(rows._array[0].Date)
+                    setNurseryDateForUpdate(date);
+                  }
+                  else
+                  {
+                    console.log('Data Not Found on this nursery');
+                  }
+                 
+        })
+    })     
+    }
+    else
+    {
+      db.transaction(tx=>
+        { 
+            tx.executeSql(
+                'SELECT * FROM CorrectiveAction where Nursery=?',
+                [selectedNursery],
+                (_, { rows }) => {
+                  if (rows.length > 0) {
+                    setGetNurseryFromEntry(rows._array);
+                    setStatusForCorr(true);
                     const date=new Date(rows._array[0].Date)
                     setNurseryDateForUpdate(date);
                   }
@@ -188,7 +214,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
    
   };
 
-  const handleEditText = (index, descOfNonConf) => {
+  const handleEditText = (index) => {
     if(descOfNonConf=='')
     {
       setError('Please Update the Corrective Action');
@@ -211,7 +237,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
   };
 
 
-  const handleEditTextUpdate = (index, descOfNonConf) => {
+  const handleEditTextUpdate = (index) => {
     if(descOfNonConf=='')
     {
       setError('Please Update the Corrective Action');
@@ -245,7 +271,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
     newData.splice(index, 1);
     setGetNurseryFromEntry(newData);
   };
-
+  let isSubmitHandled = false;
 
   const SubmitData=()=>
   {
@@ -256,6 +282,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
   }
   else
   {
+    
     let myNursery;
     if(selectedNursery==undefined)
     {
@@ -270,7 +297,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
       data.map((i)=>
       {
         tx.executeSql('INSERT INTO CorrectiveAction (Nursery,descOfNonConf, Date) VALUES (?, ?, ?)',
-         [myNursery,i.descOfNonConf, i.dateBeClosed.toISOString().substr(0, 10)],
+         [myNursery,i.descOfNonConf,dateBeClosed.toISOString().substr(0, 10)],
          (tx,result)=>
          {
             setSuccess('Data Saved Successfully');
@@ -289,17 +316,22 @@ const db = SQLite.openDatabase('mydb.Nursery');
     })
     })
   }
-  setTimeout(()=>
-  {
-     if(error!='')
-     {
-      console.log('okay')
-     }
-     else
-     {
-      goBack();
-     }
-  },1000)
+  
+  if (!isSubmitHandled) {
+    isSubmitHandled = true;
+
+    setTimeout(() => {
+      if (error !== '') {
+        console.log('okay');
+      } else {
+        navigation.goBack();
+      }
+
+      // Reset the flag variable after handling the submit
+      isSubmitHandled = false;
+    }, 100);
+  }
+
   }
   const goBack = () => {
     if (navigation.canGoBack()) {
@@ -328,13 +360,30 @@ const db = SQLite.openDatabase('mydb.Nursery');
       })
   }
 
+  
+
 
   const UpdateData=()=>
   {
+    if(getNurseryFromEntry.length <= 0)
+    {
+      setError('Please Enter Corrective Action Info');
+    }
+    else
+    {
+      let myNursery;
+      if(selectedNursery==undefined)
+      {
+        myNursery=nursery;
+      }
+      else
+      {
+        myNursery=selectedNursery;
+      }
     db.transaction(tx => {
       tx.executeSql(
         'DELETE FROM CorrectiveAction WHERE  Nursery= ?',
-        [nursery],
+        [myNursery],
         (_, result) => {
           console.log('Rows affected:', result.rowsAffected);
         },
@@ -346,7 +395,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
         {
           tx.executeSql(
             'INSERT INTO CorrectiveAction (Nursery, descOfNonConf, Date) VALUES (?,?, ?)',
-            [nursery,i.descOfNonConf,nurseryDateForUpdate.toISOString().substr(0, 10)],
+            [myNursery,i.descOfNonConf,(nurseryDateForUpdate).toISOString().substr(0, 10)],
             (_, result) => {
               console.log(result.rowsAffected);
               setSuccess('Data Updated Successfully');
@@ -363,17 +412,21 @@ const db = SQLite.openDatabase('mydb.Nursery');
           )
           })
       })
-    setTimeout(()=>
-    {
-       if(error!='')
-       {
-        console.log('okay')
-       }
-       else
-       {
-        goBack();
-       }
-    },1500)
+      if (!isSubmitHandled) {
+        isSubmitHandled = true;
+    
+        setTimeout(() => {
+          if (error !== '') {
+            console.log('okay');
+          } else {
+            navigation.goBack();
+          }
+    
+          // Reset the flag variable after handling the submit
+          isSubmitHandled = false;
+        }, 100);
+      }
+    }
   }
 
 
@@ -388,7 +441,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
   
 
 
-  if(getNurseryFromEntry.length>0)
+  if(getNurseryFromEntry.length>0||statusForCorr)
   {
     return(
       <View style={{padding:15}}>
@@ -455,9 +508,9 @@ const db = SQLite.openDatabase('mydb.Nursery');
 
 
     <DataTable.Header>
-          <View style={{width:'60%'}}>
+        
           <DataTable.Title><Text style={[styles.TableTitles,styles.content]}>Description of Non-conformance</Text></DataTable.Title>
-          </View>
+        
        
           <View style={styles.widthOfTableContent}>
           <DataTable.Title><Text style={[styles.TableTitles,styles.content]}>{edit?edit:'Edit'}</Text></DataTable.Title>
@@ -482,27 +535,17 @@ const db = SQLite.openDatabase('mydb.Nursery');
           (
                <>
 
-                <View style={{width:'60%'}}>
+              
             <DataTable.Cell>      
           <View  style={[{justifyContent:'center',alignItems:'center'}]}>
-        <TextInput 
-       style={[{justifyContent:'center',alignItems:'center'}]}
-       placeholder="Enter your Corrective Action Info"
-        onChangeText={(e)=>
-        {
-          setEditText(e);
-        }}
-        value={editText}
-        
-        />
         </View>
           
             </DataTable.Cell>
-            </View>
+           
             <View style={[styles.widthOfTableContent]}>
             <DataTable.Cell>
               <TouchableOpacity
-               onPress={() =>{ handleEditTextUpdate(index, editText)
+               onPress={() =>{ handleEditTextUpdate(index)
               }}
               >
              <EvilIcons name="refresh" size={35} color="black" />
@@ -513,6 +556,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
            <View style={[styles.widthOfTableContent]}>
            <DataTable.Cell>
             <TouchableOpacity onPress={() =>{ setEditIndex(-1); setEdit('');  setEditText(''); 
+                setDescOfNonConf('')
       if(error!=='')
       {
         setError('');
@@ -527,28 +571,36 @@ const db = SQLite.openDatabase('mydb.Nursery');
           ):(
             <>
 
-            <View style={{width:200}}>
-            <DataTable.Cell><Text>{item.descOfNonConf}</Text></DataTable.Cell>
-            </View>
+
+            <DataTable.Cell>
+              <Text>{item.descOfNonConf}</Text>
+              </DataTable.Cell>
+
            
             <View  style={[styles.widthOfTableContent,styles.content]}>
             <DataTable.Cell>
+              {filterSyncedData==undefined&&
               <TouchableOpacity
               onPress={()=>{
                 setEditIndex(index)
                  setEdit('Update');
+                 setDescOfNonConf(item.descOfNonConf)
               }}
               >
               <FontAwesome name="edit" size={27} color="black" />
               </TouchableOpacity>
+              }
+              
         
            </DataTable.Cell>
            </View>
            <View  style={[styles.widthOfTableContent,styles.content]}>
            <DataTable.Cell>
+           {filterSyncedData==undefined&&
             <TouchableOpacity onPress={() => deleteRowForUpdate(index)} >
             <AntDesign name="closesquare" size={24} color="red" />
             </TouchableOpacity>
+           }
             </DataTable.Cell>
             </View>
             </>
@@ -562,14 +614,18 @@ const db = SQLite.openDatabase('mydb.Nursery');
     </View>
     </View>
     {success?<Text style={styles.successText}>{success}</Text>:null}
-    <View style={{paddingLeft:10,paddingRight:10}}>
- <TouchableOpacity 
- onPress={UpdateData}
- style={styles.Submitbutton}>
- <FontAwesome name="file" size={24} color="white"  style={styles.fileSubmit}/>
-      <Text style={styles.SubmitbuttonText}>Update</Text>
-    </TouchableOpacity>
-    </View>
+    {
+      filterSyncedData==undefined&&
+      <View style={{paddingLeft:10,paddingRight:10}}>
+      <TouchableOpacity 
+      onPress={UpdateData}
+      style={styles.Submitbutton}>
+      <FontAwesome name="file" size={24} color="white"  style={styles.fileSubmit}/>
+           <Text style={styles.SubmitbuttonText}>Update</Text>
+         </TouchableOpacity>
+         </View>
+    }
+   
     </ScrollView>
 
     </View>
@@ -651,9 +707,9 @@ const db = SQLite.openDatabase('mydb.Nursery');
 
 
     <DataTable.Header>
-          <View style={{width:'60%'}}>
+       
           <DataTable.Title><Text style={[styles.TableTitles,styles.content]}>Description of Non-conformance</Text></DataTable.Title>
-          </View>
+        
           {/* <View style={styles.widthOfTableContent}>
           <DataTable.Title><Text  style={[styles.TableTitles,styles.content]}>Date</Text></DataTable.Title>
           </View> */}
@@ -691,30 +747,20 @@ const db = SQLite.openDatabase('mydb.Nursery');
           (
                <>
 
-                <View style={{width:'60%'}}>
+               
             <DataTable.Cell>      
           <View  style={[{justifyContent:'center',alignItems:'center'}]}>
-        <TextInput 
-       style={[{justifyContent:'center',alignItems:'center'}]}
-       placeholder="Enter your Corrective Action Info"
-        onChangeText={(e)=>
-        {
-          setEditText(e);
-        }}
-        value={editText}
-        
-        />
         </View>
           
             </DataTable.Cell>
-            </View>
+           
             {/* <View style={[{width:'20%'}]}>
             <DataTable.Cell><Text>{item.dateBeClosed.toISOString().substr(0, 10)}</Text></DataTable.Cell>
             </View> */}
             <View style={[styles.widthOfTableContent]}>
             <DataTable.Cell>
               <TouchableOpacity
-               onPress={() =>{ handleEditText(index, editText)
+               onPress={() =>{ handleEditText(index)
               }}
               >
              <EvilIcons name="refresh" size={35} color="black" />
@@ -725,6 +771,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
            <View style={[styles.widthOfTableContent]}>
            <DataTable.Cell>
             <TouchableOpacity onPress={() =>{ setEditIndex(-1); setEdit('');  setEditText(''); 
+            setDescOfNonConf('');
       if(error!=='')
       {
         setError('');
@@ -739,9 +786,9 @@ const db = SQLite.openDatabase('mydb.Nursery');
           ):(
             <>
 
-            <View style={{width:200}}>
+            
             <DataTable.Cell><Text>{item.descOfNonConf}</Text></DataTable.Cell>
-            </View>
+          
             {/* <View  style={[{width:'20%',marginLeft:15},styles.content]}>
             <DataTable.Cell><Text>{item.dateBeClosed.toISOString().substr(0, 10)}</Text></DataTable.Cell>
             </View> */}
@@ -751,6 +798,7 @@ const db = SQLite.openDatabase('mydb.Nursery');
               onPress={()=>{
                 setEditIndex(index)
                  setEdit('Update');
+                 setDescOfNonConf(item.descOfNonConf)
               }}
               >
               <FontAwesome name="edit" size={27} color="black" />

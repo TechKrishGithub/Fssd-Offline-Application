@@ -7,55 +7,44 @@ import {
     TouchableOpacity,
     Alert,
  } from "react-native";
- import { Foundation ,Feather } from '@expo/vector-icons';
+ import { Foundation ,Feather,MaterialIcons } from '@expo/vector-icons';
  import styles from './styles';
  import SyncingData from '../SyncingData';
+ import * as SQLite from 'expo-sqlite';
+ 
 
-const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,nurObserData,correctiveData }) => {
+
+ const db=SQLite.openDatabase('mydb.Nursery');
+
+const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,nurObserData,correctiveData,forQuestionIdAndMaxScore,forNurId,userDetails,syncedData,myStatus}) => {
     const [selectedRow, setSelectedRow] = useState(null);
-  
+
+
     const handleButtonPress = (rowData) => {
       setSelectedRow(rowData);
     };
-  
+
     const handleHideDetails = () => {
       setSelectedRow(null);
     };
 
-    useEffect(()=>
-    {
-      
-    },[])
-
-
-    const generateID = () => {
-      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      let id = '';
-  
-      for (let i = 0; i < 7; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length);
-        id += characters.charAt(randomIndex);
-      }
-      console.log(id)
-      return id;
-    };
-
-
-    const syncData=(nursery)=>
-    {
-   console.log(nursery);
-    }
-  
-    
     return (
       <View>
     
         {nurAudEntry.map((rowData) => 
         {
          
+          let filterSyncedData='';
+
+          if(syncedData.some((o)=>o.NurseryName===rowData.nursery))
+          {
+            filterSyncedData='Yes'
+          }
+          
           const filterMyArray=nurAudAns.filter(obj=>
             rowData.nursery==obj.nursery
           )
+
           const filteredArray = nurAudDet.filter((obj) =>
           filterMyArray.some((o) => o.auditcriterionid === obj.auditcriterionid)
             );
@@ -103,10 +92,11 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
           }
 
 
-
-
           return (
             <View key={rowData.id}>
+             
+        
+           
               <ListItem >
                 <ListItem.Content style={styles.ListContent}>
 
@@ -114,9 +104,8 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                   {/* <Text> ({savedCount}/{totalcount})</Text> */}
                   </ListItem.Title>
                   {/* <ListItem.Subtitle>species: {rowData.species}</ListItem.Subtitle> */}
-
                   <Text>Out of {totalcount} Audit Criterion {savedCount} completed</Text>
-                  <ListItem.Subtitle>{completed?
+                  <ListItem.Subtitle>{completed && statusForCorr=='saved' && statusForObs=='saved' ?
                   <View style={[styles.auditInfo,{borderBottomWidth:0}]}>
                   <Text>Status:</Text>
                  <Text style={{color:'green',fontSize:13}}> completed</Text>
@@ -132,6 +121,18 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                             {statusForObs=='saved'?
                                <View style={styles.savEdit}>
                                <Text style={styles.successText}>saved</Text>
+
+                               {filterSyncedData=='Yes'?
+                               <TouchableOpacity
+                               style={{marginLeft:20}}
+                               onPress={()=>
+                              {
+                                navigation.navigate('NurseryObservations',{nursery:rowData.nursery,filterSyncedData:filterSyncedData});
+                              }}
+                               >
+                               <MaterialIcons name="preview" size={18} color="green" />
+                               </TouchableOpacity> 
+                               :
                                <TouchableOpacity
                                style={{marginLeft:20}}
                                onPress={()=>
@@ -142,6 +143,8 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                                <Feather name="edit" size={18} color="blue" />
                                </TouchableOpacity>
                                
+                              }
+
                                </View>
                               
                               :
@@ -162,15 +165,29 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                             {statusForCorr=='saved'?
                                <View style={styles.savEdit}>
                                <Text style={styles.successText}>saved</Text>
+
+                               {filterSyncedData=='Yes'?
                                <TouchableOpacity
                                style={{marginLeft:20}}
                                onPress={()=>
-                               {
-                                navigation.navigate('CorrectiveAction',{nursery:rowData.nursery});
-                               }}
+                              {
+                                navigation.navigate('CorrectiveAction',{nursery:rowData.nursery,filterSyncedData:filterSyncedData});
+                              }}
                                >
-                               <Feather name="edit" size={18} color="blue" />
-                               </TouchableOpacity>
+                               <MaterialIcons name="preview" size={18} color="green" />
+                               </TouchableOpacity> 
+                              :
+                              <TouchableOpacity
+                              style={{marginLeft:20}}
+                              onPress={()=>
+                              {
+                               navigation.navigate('CorrectiveAction',{nursery:rowData.nursery});
+                              }}
+                              >
+                              <Feather name="edit" size={18} color="blue" />
+                              </TouchableOpacity>
+                            }
+
                                
                                </View>
                               :
@@ -200,6 +217,17 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                  
                 )}
               </ListItem>
+
+        {/* {savedCount=='0'?   <SyncingData 
+               nursery={rowData.nursery}
+               nurAudEntry={nurAudEntry}
+               nurAudDet={nurAudDet}
+               forNurId={forNurId}
+               userDetails={userDetails}
+               /> 
+              :
+              null
+              } */}
                 {completed && statusForCorr=='saved' && statusForObs=='saved'?
                 selectedRow && rowData.id === selectedRow.id ?
                  null
@@ -211,6 +239,11 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                nurAudAns={nurAudAns}
                nurObserData={nurObserData} 
                correctiveData={correctiveData}
+               forQuestionIdAndMaxScore={forQuestionIdAndMaxScore}
+               forNurId={forNurId}
+               userDetails={userDetails}
+               syncedData={syncedData}
+               myStatus={myStatus}
                />
               :
               null
@@ -227,6 +260,19 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                             {filteredArray.some((o) => o.auditcriterionid ===v.auditcriterionid) ?
                             <View style={styles.savEdit}>
                             <Text style={styles.successText}>saved</Text>
+                            
+                            {
+                              filterSyncedData=='Yes'?
+                              <TouchableOpacity
+                              style={styles.edit}
+                              onPress={()=>
+                              {
+                                navigation.navigate("Nursery Audit", { nurseryAuditDetails: v, auditcriterionid: v.auditcriterionid, nursery:rowData.nursery,filterSyncedData:filterSyncedData });
+                              }}
+                              >
+                              <MaterialIcons name="preview" size={18} color="green" />
+                              </TouchableOpacity>
+                            :
                             <TouchableOpacity
                             style={styles.edit}
                             onPress={()=>
@@ -236,7 +282,11 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                             >
                             <Feather name="edit" size={18} color="blue" />
                             </TouchableOpacity>
-                            
+                              
+                            }
+
+
+                          
                             </View>
                             :
                             <TouchableOpacity
@@ -250,10 +300,10 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                             </TouchableOpacity>
                             
                             }      
-                            
+               
                             </View>
                         )
-                        
+                          
                     }
                   )
               )}
@@ -267,20 +317,31 @@ const DashboardNurseryAuditList = ({ nurAudEntry,nurAudDet,nurAudAns,navigation,
                 nurAudAns={nurAudAns}
                 nurObserData={nurObserData} 
                 correctiveData={correctiveData}
+                forQuestionIdAndMaxScore={forQuestionIdAndMaxScore}
+                forNurId={forNurId}
+                userDetails={userDetails}
+                syncedData={syncedData}
+                myStatus={myStatus}
                 />
                :
               null
               :
+                  
               null
+                  
               }
+        
             </View>
-  
+            
           )
+            
         }
+        
        )}
        
       </View>
     );
-  };
+      
+  }
   
   export default DashboardNurseryAuditList;

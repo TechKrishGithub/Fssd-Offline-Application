@@ -3,8 +3,10 @@ import { View, ScrollView,Text } from "react-native";
 import { ListItem } from "@rneui/themed";
 import { Entypo } from "@expo/vector-icons";
 import { AntDesign } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/FontAwesome'; 
 //import data from "../../constants";
 import styles from "./styles";
+import { useEffect } from "react";
 
 const AccordianList = (props) => {
   const { 
@@ -12,13 +14,19 @@ const AccordianList = (props) => {
      data,
      nursery,
      location,
+     District,
      species,
      dateOfAudit,
      representative,
      representativeName,
+     phonenumber,
      latitude,
      longitude,
-     altitude
+     altitude,
+     nurAudAns,
+     que1,
+     que2,
+     que3
     } = props;
   const [expanded, setExpanded] = useState(false);
 
@@ -28,15 +36,21 @@ const AccordianList = (props) => {
      auditcriterionid: i,
      nursery:nursery,
      location: location,
+     District:District,
      species:species,
      dateOfAudit:dateOfAudit,
      representative:representative,
      representativeName:representativeName,
+     phonenumber:phonenumber,
      latitude:latitude,
      longitude:longitude,
-     altitude:altitude
+     altitude:altitude,
+     que1:que1,
+     que2:que2,
+     que3:que3
       });
   };
+
 
   return (
     <View style={{ paddingBottom: 30, flex: 1, marginTop: 2 }}>
@@ -61,7 +75,17 @@ const AccordianList = (props) => {
       >
         <ScrollView>
           {data &&
-            data?.map((l, i) => (
+            data?.map((l, i) =>
+            {
+              let status;
+              nurAudAns.map(obj=>
+                {
+                  if(obj.auditcriterionid==l.auditcriterionid)
+                  {
+                    status='saved';
+                  }
+                })
+            return(
               
               <ListItem
                 key={i}
@@ -72,24 +96,22 @@ const AccordianList = (props) => {
                 animation={"350ms"}
             
               >
-                <ListItem.Content 
-                style={{height:30,backgroundColor:'#e4eeec'}}
-                >
-                  <ListItem.Title
-                    style={{ fontSize: 18, fontWeight: "600", padding: 4,marginLeft:10 }}
-                  >
-                    {l?.auditcriterion}
-                  </ListItem.Title>
-                </ListItem.Content>
-
+               <ListItem.Content style={{ backgroundColor: '#e4eeec' }}>
+              <ListItem.Title style={{ padding: 4,fontWeight:'600' }}>
+              {l?.auditcriterion}
+              </ListItem.Title>
+            </ListItem.Content>
+              {status=='saved'?<Icon name="check-circle" size={15} color="green" />:null}
                <View style={styles.arrowStyle}><ListItem.Chevron /></View> 
               </ListItem>
-            ))}
+            )})}
         </ScrollView>
         
       </ListItem.Accordion>
     </View>
+            
   );
+  
 };
 
 export default AccordianList;

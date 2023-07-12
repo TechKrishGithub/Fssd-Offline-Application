@@ -90,6 +90,10 @@ const PinGeneration = ({navigation}) => {
 
 
   const handleChangeText = (value) => {
+    if(error)
+    {
+      setError('');
+    }
     if (value.length === 4) {
       confirmPinRef.current.focus();
     }
@@ -97,6 +101,10 @@ const PinGeneration = ({navigation}) => {
   };
 
   const handleConfirmChangeText = (value) => {
+    if(error)
+    {
+      setError('');
+    }
     setConfirmPin(value);
   };
 
@@ -163,7 +171,7 @@ else
       <Text style={styles.userText}>{user}</Text>
       </View> */}
       
-      <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+      <View style={{flex:1,alignItems:'center'}}>
       <Text style={[styles.PinText]}>Create Pin</Text>
       <View style={styles.circle}>
         <View style={styles.dot}>
@@ -188,7 +196,8 @@ else
         />
         {/* <Image source={lockIcon} style={{height:50,width:50}}/> */}
       </View>
-      <Text></Text>
+
+     <View style={{paddingTop:30,alignItems:'center'}}>
       <Text style={styles.PinText}>Confirm Pin</Text>
       <View style={styles.confirmCircle}>
         <View style={styles.dot}>
@@ -214,7 +223,7 @@ else
         />
         {/* <Image source={lockIcon} style={{height:50,width:50}}/> */}
       </View>
-
+</View>
       <Text></Text>
 
     
@@ -226,10 +235,12 @@ else
         <Text style={styles.success}>{success}</Text>
       }
     <Text></Text>
-
+<View style={{justifyContent:'center',alignItems:'center'}}>
     <TouchableOpacity style={styles.button}  onPress={handleCreatePin}>
       <Text style={styles.text}>Create Pin</Text>
     </TouchableOpacity>
+</View>
+
     </View>
     </View>
      

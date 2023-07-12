@@ -13,7 +13,10 @@ import {
   MaterialCommunityIcons,
   FontAwesome5,
   Ionicons,
-  AntDesign
+  AntDesign,
+  Entypo,
+  FontAwesome,
+  MaterialIcons
 } from '@expo/vector-icons';
 import style from "./style";
 import { DataTable } from "react-native-paper";
@@ -100,7 +103,14 @@ function Logout({ navigation }) {
     //  navigation.navigate('Nursery Audit Checklist')
   }
 
- 
+  const handleClose = () => {
+    if (Expo.Constants.appOwnership === 'expo') {
+      Expo.App.quit();
+    } else {
+      // For non-Expo managed projects, you can use the following line instead:
+      // NativeModules.AppRegistry.unmountApplicationComponentAtRootTag();
+    }
+  };
 
   return (
     <View style={{ backgroundColor:'rgba(198, 227, 228,0.5)',flex:1}}>
@@ -166,40 +176,29 @@ function Logout({ navigation }) {
     </DataTable.Row>
   </DataTable>
   </View>
-
-<View style={style.Buttons}>
-
-  <TouchableHighlight style={style.containerForLogout} 
-  onPress={()=>
-    {
-      setModalVisible(true)
-    }}
-  >
-    <View style={[style.button,{backgroundColor:'red'}]}>
-    <AntDesign name="logout" size={18} color="#FFFFFF" />
-      <Text style={[style.textForLogout]}>Logout</Text>
-      </View>
-    </TouchableHighlight>
-
-<View style={{paddingLeft:'20%'}}>
-    <TouchableOpacity
-    onPress={()=>navigation.navigate('PinAccess')}
-    >
-      <View style={[style.button]}>
-        <Ionicons name="lock-closed" size={20} color="#FFFFFF" />
-        <Text style={style.buttonText}>Lock</Text>
-      </View>
-    </TouchableOpacity>
-
+<Text></Text>
+  <View style={style.containerForButtons}>
+    
+      <TouchableOpacity style={[style.buttonNew,{ backgroundColor: '#c0392b' }]}
+        onPress={()=>
+          {
+            setModalVisible(true)
+          }}
+      >
+        <AntDesign name="logout" size={24} color="white" />
+        <Text style={style.buttonTextNew}>Logout</Text>
+      </TouchableOpacity>
+      <View style={style.buttonGap} />
+      <TouchableOpacity style={[style.buttonNew,{ backgroundColor: '#34495e' }]}
+        onPress={()=>navigation.navigate('PinAccess')}
+      >
+      <MaterialIcons name="signal-cellular-off" size={24} color="white" />
+        <Text style={style.buttonTextNew}>Go To Offline</Text>
+      </TouchableOpacity>
+     
     </View>
 
-    </View>
-{/* <TouchableHighlight
-style={[style.modalButton, style.modalCancelButton]}
 
->
-  <Text style={style.modalButtonText}>Logout</Text>
-</TouchableHighlight> */}
 
   </View>
   </View>
